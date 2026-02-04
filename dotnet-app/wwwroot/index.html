@@ -1,0 +1,53 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Realtime Chat (SignalR)</title>
+</head>
+<body>
+    <h1>Realtime Chat (SignalR) - Demo</h1>
+    <div>
+        <input id="userInput" placeholder="Your name" />
+        <input id="messageInput" placeholder="Message" />
+        <button id="sendBtn">Send</button>
+    </div>
+    <ul id="messagesList"></ul>
+
+    <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@7.0.5/dist/browser/signalr.min.js"></script>
+    <script>
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/chathub")
+            .withAutomaticReconnect()
+            .build();
+
+        connection.on("ReceiveMessage", (user, message) => {
+            const li = document.createElement("li");
+            li.textContent = `${user}: ${message}`;
+            document.getElementById("messagesList").appendChild(li);
+        });
+
+        async function start() {
+            try {
+                await connection.start();
+                console.log("connected");
+            } catch (err) {
+                console.error(err);
+                setTimeout(start, 2000);
+            }
+        }
+        start();
+
+        document.getElementById("sendBtn").addEventListener("click", async () => {
+            const user = document.getElementById("userInput").value || "anonymous";
+            const message = document.getElementById("messageInput").value || "";
+            if (!message) return;
+            try {
+                await connection.invoke("SendMessage", user, message);
+                document.getElementById("messageInput").value = "";
+            } catch (err) {
+                console.error(err);
+            }
+        });
+    </script>
+</body>
+</html>
